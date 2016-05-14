@@ -4,8 +4,7 @@ var require = (function(rootUrl) {
 
 	var baseRequire = function(baseUrl, modulePath, onLoaded) {
 		// Convert relative module path to absolute and normalise to get rid of any ./ or ../
-		baseUrl = baseUrl.substr(0, baseUrl.lastIndexOf("/")+1);	// Base URL minus any trailing filename
-		var thisModuleUrl = normalisePath(baseUrl + modulePath);
+		var thisModuleUrl = resolvePath(baseUrl, modulePath);
 
 		var callback = onLoaded;
 
@@ -37,14 +36,17 @@ var require = (function(rootUrl) {
 		req.send();
 	};
 
-	var normalisePath = function(denormalisedPath) {
-		var normalisedPath = denormalisedPath.replace(/([\/^])\.\//g, '$1');	// Replace "/./" and "./" with ""
-		while(normalisedPath.match(/[\/^]\.\.\//)) {
-			normalisedPath = normalisedPath.replace(/([\/^])[^\/]+\/\.\.\/?/g, '/');	// Replace "/dir/../" and "/dir/.." with "/", or "dir/../" and "dir/.." with ""
-		}
-		return normalisedPath;
 	};
 
+	var resolvePath = function(baseUrl, relativePath) {
+		baseUrl = baseUrl.substr(0, baseUrl.lastIndexOf("/")+1);	// Base URL minus any trailing filename
+		var denormalisedUrl = baseUrl + relativePath;
+		var normalisedUrl = denormalisedUrl.replace(/([\/^])\.\//g, '$1');	// Replace "/./" and "./" with ""
+		while(normalisedUrl.match(/[\/^]\.\.\//)) {
+			normalisedUrl = normalisedUrl.replace(/([\/^])[^\/]+\/\.\.\/?/g, '/');	// Replace "/dir/../" and "/dir/.." with "/", or "dir/../" and "dir/.." with ""
+		}
+		return normalisedUrl;
+	};
 
 	return baseRequire.bind(null, rootUrl);
 })(document.location);
