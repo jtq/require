@@ -4,15 +4,19 @@ var require = (function(globalRootUrl) {
 
 	var cache = {};
 
-	var baseRequire = function(baseUrl, modulePath, onLoaded) {
+	/**
+	 * @param {boolean} forceCompilation - Force compilation of required() modules? (Should always be true except when resolving recursive dependencies)
+	 * @param {string} baseUrl - Absolute URL to resolve modulePath against
+	 * @param {string} modulePath - Module path/URL (may be absolute or relative to baseUrl)
+	 * @param {callback} callback - Callback when module is successfully loaded
+	 */
+	var baseRequire = function(forceCompilation, baseUrl, modulePath, callback) {
 		// Convert relative module path to absolute and normalise to get rid of any ./ or ../
-		var thisModuleUrl = resolvePath(baseUrl, modulePath);
-
-		var callback = onLoaded;
+		var thisModuleUrl = resolvePath(baseUrl || "", modulePath);
 
 		var cacheEntry = cache[thisModuleUrl];
 		if(cacheEntry) {	// Have we heard of this module at all yet?
-			if(cacheEntry.loaded) {	// If we already have a cached copy of the module, synchronously return it (for modules that use `var mod = require('mod');`)
+			if(cacheEntry.loaded || !forceCompilation) {	// If we already have a cached copy of the module, synchronously return it (for modules that use `var mod = require('mod');`)
 				if(callback) {	// Equally, if the calling code has passed in a callback to be run when this module is ready, run it as well
 		  			callback(cacheEntry.module);
 		  		}
@@ -55,16 +59,23 @@ var require = (function(globalRootUrl) {
 
 		  		if(cacheEntry.dependencies.length) {	// If this submodule has unmet dependencies, download/build them now
 			  		cacheEntry.dependencies.forEach(function(subModuleUrl) {
-			  			baseRequire("", subModuleUrl, function(module) {
-			  				// Now this subModule is compiled mark it off the "unmet dependencies" list
-			  				//console.log("submodule", subModuleUrl, "loaded for ", thisModuleUrl);
-			  				cache[subModuleUrl].loaded = true;
-			  				// And if it's the last one, finally compile the original module that depended on it
-			  				if(cacheEntry.dependencies.every(function(key) { return cache[key].loaded; })) {
-			  					//console.log("met dependencies for", thisModuleUrl, "- building");
-			  					process(thisModuleUrl, source);
-			  				}
-			  			});
+			  			if(cache[subModuleUrl] && hasIndirectDependencyOn(cache[subModuleUrl], thisModuleUrl)) {
+			  				console.warn("circular dependency - submodule", subModuleUrl, "<- ... -> module", thisModuleUrl);
+			  				console.warn("compiling ", thisModuleUrl, "with an empty", subModuleUrl);
+			  				process(thisModuleUrl, source, false);
+			  			}
+			  			else {
+				  			baseRequire(true, null, subModuleUrl, function(module) {
+				  				// Now this subModule is compiled mark it off the "unmet dependencies" list
+				  				//console.log("submodule", subModuleUrl, "loaded for ", thisModuleUrl);
+				  				cache[subModuleUrl].loaded = true;
+				  				// And if it's the last one, finally compile the original module that depended on it
+				  				if(cacheEntry.dependencies.every(function(key) { return cache[key].loaded; })) {
+				  					//console.log("met dependencies for", thisModuleUrl, "- building");
+				  					process(thisModuleUrl, source, true);
+				  				}
+				  			});
+				  		}
 			  		});
 			  	}
 			  	else {	// Otherwise (no unmet dependencies), build immediately
@@ -75,9 +86,9 @@ var require = (function(globalRootUrl) {
 		}
 	};
 
-	var compile = function(source, thisModuleUrl) {	// Create new scope for eval
+	var compile = function(source, thisModuleUrl, forceCompilation) {	// Create new scope for eval
 
-		var require = baseRequire.bind(null, thisModuleUrl);
+		var require = baseRequire.bind(null, forceCompilation, thisModuleUrl);
 		var module = {
 			exports: {}
 		};
@@ -88,14 +99,14 @@ var require = (function(globalRootUrl) {
 		return module.exports;
 	};
 
-	var process = function(thisModuleUrl, source) {
+	var process = function(thisModuleUrl, source, forceCompilation) {
 		// Finally compile the source of our module now all the dependencies have been compiled
 		//console.log("compiling", thisModuleUrl);
-  		var module = compile(source, thisModuleUrl);
+  		var module = compile(source, thisModuleUrl, forceCompilation);
   		//console.log("compiled", thisModuleUrl, module);
 
   		cache[thisModuleUrl].module = module;
-  		cache[thisModuleUrl].loaded = true;
+  		cache[thisModuleUrl].loaded = forceCompilation;
 
   		cache[thisModuleUrl].callbacks.forEach(function(callback) {
   			callback(module);
@@ -112,7 +123,23 @@ var require = (function(globalRootUrl) {
 		return normalisedUrl;
 	};
 
-	var globalRequire = baseRequire.bind(null, globalRootUrl);
+	var hasIndirectDependencyOn = function(module, targetPath) {
+		////console.log("checking", module.path);
+		if(module.path === targetPath) {
+			////console.log("found");
+			return true;
+		}
+		else if(module.dependencies.length === 0) {
+			////console.log("no dependencies");
+			return false;
+		}
+
+		return module.dependencies.some(function(dep) {
+			return hasIndirectDependencyOn(cache[dep], targetPath);
+		});
+	};
+
+	var globalRequire = baseRequire.bind(null, true, globalRootUrl);
 	globalRequire.cache = cache;
 	return globalRequire;
 })(document.location);
