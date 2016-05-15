@@ -28,7 +28,8 @@ var require = (function(globalRootUrl) {
 				path: thisModuleUrl,
 				loaded: false,
 				module: {},
-				callbacks: callback ? [callback] : []
+				callbacks: callback ? [callback] : [],
+				dependencies: []
 			};
 			cache[thisModuleUrl] = cacheEntry;
 
@@ -42,26 +43,24 @@ var require = (function(globalRootUrl) {
 		  		var source = req.responseText;
 
 		  		// Check whether this module requires submodules, in which case compiling it will need deferring until we've downloaded/built those
-		  		var subModules = {}, subModuleUrls;
 		  		var matches;
 		  		var requireRegexp = /[\s=;{}]require\s*\(\s*['""]\s*([a-zA-Z0-9_\-\.\/\\]+)\s*['""]/g;
 		  		while((matches = requireRegexp.exec(source)) !== null) {
 		  			var subModuleUrl = resolvePath(thisModuleUrl, matches[1]);
-		  			subModules[subModuleUrl] = false;
+		  			cacheEntry.dependencies.push(subModuleUrl);
 		  		}
-		  		subModuleUrls = Object.keys(subModules);	// Optimisation to avoid repeated calls to Object.keys(subModules)
-		  		//console.log("loading", thisModuleUrl, "- dependencies", subModuleUrls);
+		  		//console.log("loading", thisModuleUrl, "- dependencies", cacheEntry.dependencies);
 
 		  		// No need to filter for already-cached modules here, as baseRequire() already handles that
 
-		  		if(subModuleUrls.length) {	// If this submodule has unmet dependencies, download/build them now
-			  		subModuleUrls.forEach(function(subModuleUrl) {
+		  		if(cacheEntry.dependencies.length) {	// If this submodule has unmet dependencies, download/build them now
+			  		cacheEntry.dependencies.forEach(function(subModuleUrl) {
 			  			baseRequire("", subModuleUrl, function(module) {
 			  				// Now this subModule is compiled mark it off the "unmet dependencies" list
 			  				//console.log("submodule", subModuleUrl, "loaded for ", thisModuleUrl);
-			  				subModules[subModuleUrl] = true;
+			  				cache[subModuleUrl].loaded = true;
 			  				// And if it's the last one, finally compile the original module that depended on it
-			  				if(subModuleUrls.every(function(key) { return subModules[key]; })) {
+			  				if(cacheEntry.dependencies.every(function(key) { return cache[key].loaded; })) {
 			  					//console.log("met dependencies for", thisModuleUrl, "- building");
 			  					process(thisModuleUrl, source);
 			  				}
