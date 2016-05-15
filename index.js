@@ -1,6 +1,6 @@
-var require = (function(rootUrl) {
+var require = (function(globalRootUrl) {
 
-	rootUrl = rootUrl + "";
+	globalRootUrl = globalRootUrl + "";
 
 	var baseRequire = function(baseUrl, modulePath, onLoaded) {
 		// Convert relative module path to absolute and normalise to get rid of any ./ or ../
@@ -58,5 +58,6 @@ var require = (function(rootUrl) {
 		return normalisedUrl;
 	};
 
-	return baseRequire.bind(null, rootUrl);
+	var globalRequire = baseRequire.bind(null, globalRootUrl);
+	return globalRequire;
 })(document.location);
