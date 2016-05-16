@@ -8,10 +8,10 @@ Asynchronous/synchronous CommonJS module loader for javascript.
 
 For a module loaded directly from your web page:
 
-# XHR is used to asynchronously request the module file from the server
-# The module source is statically analysed for sub-dependencies, and any found are themselves (recursively) asynchronously requested, analysed and built until all dependencies and subdependencies of the original module are available
-# The original requested module is built
-# The callback is called, and the original module is passed as a parameter
+1. XHR is used to asynchronously request the module file from the server
+2. The module source is statically analysed for sub-dependencies, and any found are themselves (recursively) asynchronously requested, analysed and built until all dependencies and subdependencies of the original module are available
+3. The original requested module is built
+4. The callback is called, and the original module is passed as a parameter
 
     <script src="require/index.js"></script>
     <script>
