@@ -14,20 +14,20 @@ For a module loaded directly from your web page:
 4. The callback is called, and the original module is passed as a parameter
 
 ```
-    <script src="require/index.js"></script>
-    <script>
-        require('modules/a.js', function(module) {
-            console.log(module);  // Loaded module
-            console.log(require.cache); // Cache of all modules required (including indirectly) by a.js
-        });
-    </script>
+<script src="require/index.js"></script>
+<script>
+    require('modules/a.js', function(module) {
+        console.log(module);  // Loaded module
+        console.log(require.cache); // Cache of all modules required (including indirectly) by a.js
+    });
+</script>
 ```
 
 ### From within a CommonJS module
 
 Once all dependent modules have been analysed and loaded, the loader exposes a *synchronous* version of `require()` when building modules, that retrieves a given module from the cache and returns it synchronously to any module that requires it.
 
-    var b = require("a.js");
+````var b = require("a.js");````
     
 ### Additional notes
 
