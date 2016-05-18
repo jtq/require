@@ -123,19 +123,27 @@ var require = (function(globalRootUrl) {
 		return normalisedUrl;
 	};
 
-	var hasIndirectDependencyOn = function(module, targetPath) {
-		////console.log("checking", module.path);
+	var hasIndirectDependencyOn = function(module, targetPath, seen) {
+
+		seen = seen || [];
+
+		//console.log("checking", module.path);
 		if(module.path === targetPath) {
-			////console.log("found");
+			//console.log("found");
 			return true;
 		}
+		else if(seen.indexOf(module.path) !== -1) {	// Encountered a recursive loop between two unrelated modules, so return false;
+			//console.log("encountered unrelated loop (", module.path, " is a dependency of itself)");
+			return false;
+		}
 		else if(module.dependencies.length === 0) {
-			////console.log("no dependencies");
+			//console.log("no dependencies");
 			return false;
 		}
 
+		seen.push(module.path);
 		return module.dependencies.some(function(dep) {
-			return hasIndirectDependencyOn(cache[dep], targetPath);
+			return hasIndirectDependencyOn(cache[dep], targetPath, seen);
 		});
 	};
 
