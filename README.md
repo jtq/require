@@ -31,5 +31,6 @@ Once all dependent modules have been analysed and loaded, the loader exposes a *
     
 ### Additional notes
 
+* The global `require(modulePath, callback)` function also supports an array of modulePaths: `require([modulePath1, modulePath2], callback)`, and executes the callback once *all* specified modules have been loaded.
 * You can inspect the module cache at any time by inspecting `require.cache`
 * As per node/CommonJS expectations, recursive dependencies are resolved by substituting an empty object for the first "repeated" module.  Eg, for module `A` which depends on `B` which depends on `A`, module `B` is first built with an empty object supplied for `A`, and then `A` is build with the instantiated version of `B`.
