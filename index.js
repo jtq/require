@@ -23,7 +23,9 @@ var require = (function(globalRootUrl) {
 				return cacheEntry.module;
 			}
 			else {	// The module is in the process of being requested, so just add a callback
-				cacheEntry.callbacks.push(callback);
+				if(callback) {
+					cacheEntry.callbacks.push(callback);
+				}
 			}
 		}
 		else {	// Brand new module (not already loaded, not already in the process of being requested)
@@ -147,7 +149,39 @@ var require = (function(globalRootUrl) {
 		});
 	};
 
-	var globalRequire = baseRequire.bind(null, true, globalRootUrl);
+	// Now generate a global require function:
+	// * Bound to the document location as a basePath
+	// * Which accepts a single module path of array of module paths (for convenience)
+	// * Which accepts a callback that's not fired until *all* the module(s) have finished loading
+	var documentLocationRequire = baseRequire.bind(null, true, null);
+	var globalRequire = function(modulePaths, callback) {
+
+		// If single value passed, coerce it to an array
+		modulePaths = modulePaths instanceof Array ? modulePaths : [modulePaths];
+
+		// Resolve module paths to absolute paths
+		modulePaths = modulePaths.map(function(modulePath) {
+			return resolvePath(globalRootUrl, modulePath);
+		});
+
+		// Now require (async) each module in turn, and if a callback was provided by the caling code, pass
+		// in a callback that waits for *all* modules to be loaded before firing the provided callback.
+		var loadedModules = 0;
+		var allLoadedCallback = function() {
+			loadedModules++;
+
+			if(loadedModules === modulePaths.length) {
+				var modules = modulePaths.map(function(modulePath) { return cache[modulePath].module; });
+				callback.apply(null, modules);
+			}
+		};
+
+		modulePaths.forEach(function(relativeModulePath) {
+			documentLocationRequire(relativeModulePath, (callback ? allLoadedCallback : null));
+		});
+
+	};
 	globalRequire.cache = cache;
+
 	return globalRequire;
 })(document.location);
