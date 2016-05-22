@@ -116,9 +116,16 @@ var require = (function(globalRootUrl) {
 	};
 
 	var resolvePath = function(baseUrl, relativePath) {
-		baseUrl = baseUrl.substr(0, baseUrl.lastIndexOf("/")+1);	// Base URL minus any trailing filename
-		var denormalisedUrl = baseUrl + relativePath;
-		var normalisedUrl = denormalisedUrl.replace(/([\/^])\.\//g, '$1');	// Replace "/./" and "./" with ""
+		var denormalisedUrl;
+
+		if(relativePath.match(/^[a-z][a-z0-9+\-\.]*:/i)) {	// If relativePath is an absolute URL, just use that
+			denormalisedUrl = relativePath;
+		}
+		else {															// Else combine base URL and relative path
+			baseUrl = baseUrl.substr(0, baseUrl.lastIndexOf("/")+1);	// Base URL minus any trailing filename
+			denormalisedUrl = baseUrl + relativePath;
+		}
+		var normalisedUrl = denormalisedUrl.replace(/([\/^])\.\//g, '$1');	// Replace "/./"s and "./"s with ""
 		while(normalisedUrl.match(/[\/^]\.\.\//)) {
 			normalisedUrl = normalisedUrl.replace(/([\/^])[^\/]+\/\.\.\/?/g, '/');	// Replace "/dir/../" and "/dir/.." with "/", or "dir/../" and "dir/.." with ""
 		}
