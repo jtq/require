@@ -129,6 +129,17 @@ var require = (function(globalRootUrl) {
 		while(normalisedUrl.match(/[\/^]\.\.\//)) {
 			normalisedUrl = normalisedUrl.replace(/([\/^])[^\/]+\/\.\.\/?/g, '/');	// Replace "/dir/../" and "/dir/.." with "/", or "dir/../" and "dir/.." with ""
 		}
+
+		if(!normalisedUrl.match(/\.js$/i)) {
+			if(normalisedUrl.substr(-1) === "/") {
+				normalisedUrl += "index.js";
+			}
+			else {
+				normalisedUrl += ".js";
+			}
+			
+		}
+
 		return normalisedUrl;
 	};
 
