@@ -84,7 +84,7 @@ var require = (function(globalRootUrl) {
 
 	  		// Check whether this module requires submodules, in which case compiling it will need deferring until we've downloaded/built those
 	  		var matches;
-	  		var requireRegexp = /[\s=;{}]require\s*\(\s*['""]\s*([a-zA-Z0-9_\-\.\/\\]+)\s*['""]/g;
+	  		var requireRegexp = /[\s=;{}]require\s*\(\s*['""]\s*([a-zA-Z0-9_@\-\.\/\\]+)\s*['""]/g;
 	  		while((matches = requireRegexp.exec(source)) !== null) {
 	  			var subModuleUrl = resolvePath(thisModuleUrl, matches[1]);
 	  			var subModuleCanonicalUrl = canonicalName(subModuleUrl);
