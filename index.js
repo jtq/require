@@ -116,7 +116,7 @@ var require = (function(globalRootUrl) {
 		  		});
 		  	}
 		  	else {	// Otherwise (no unmet dependencies), build immediately
-		  		process(thisCanonicalName, source);
+		  		process(thisCanonicalName, source, true);
 		  	}
 		};
 		req.send();
